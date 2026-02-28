@@ -26,6 +26,7 @@ import (
 type serverConn struct {
 	id                int64           // 连接ID
 	uid               atomic.Int64    // 用户ID
+	realIP            string          // 真实IP
 	attr              *attr           // 连接属性
 	state             atomic.Int32    // 连接状态
 	connMgr           *serverConnMgr  // 连接管理
@@ -149,6 +150,10 @@ func (c *serverConn) LocalAddr() (net.Addr, error) {
 
 // RemoteIP 获取远端IP
 func (c *serverConn) RemoteIP() (string, error) {
+	if c.realIP != "" {
+		return c.realIP, nil
+	}
+
 	addr, err := c.RemoteAddr()
 	if err != nil {
 		return "", err
@@ -175,9 +180,10 @@ func (c *serverConn) RemoteAddr() (net.Addr, error) {
 }
 
 // 初始化连接
-func (c *serverConn) init(cm *serverConnMgr, id int64, conn *websocket.Conn) {
+func (c *serverConn) init(cm *serverConnMgr, id int64, conn *websocket.Conn, realIP string) {
 	c.id = id
 	c.uid.Store(0)
+	c.realIP = realIP
 	c.attr = &attr{}
 	c.state.Store(int32(network.ConnOpened))
 	c.conn = conn
@@ -202,6 +208,7 @@ func (c *serverConn) init(cm *serverConnMgr, id int64, conn *websocket.Conn) {
 
 // 重置连接
 func (c *serverConn) reset() {
+	c.realIP = ""
 	c.attr = nil
 }
 

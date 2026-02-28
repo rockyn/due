@@ -11,11 +11,11 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/dobyte/due/network/ws/v2"
 	"github.com/dobyte/due/v2/log"
 	"github.com/dobyte/due/v2/network"
 	"github.com/dobyte/due/v2/packet"
 	"github.com/dobyte/due/v2/utils/xcall"
+	"github.com/rockyn/due/network/ws/v2"
 )
 
 func TestServer(t *testing.T) {

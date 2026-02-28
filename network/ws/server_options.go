@@ -2,6 +2,7 @@ package ws
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/dobyte/due/v2/etc"
@@ -16,6 +17,8 @@ const (
 	defaultServerHeartbeatInterval  = "10s"
 	defaultServerHeartbeatMechanism = "resp"
 	defaultServerAuthorizeTimeout   = "0s"
+	defaultServerRealIPEnabled      = false
+	defaultServerRealIPMode         = "right"
 )
 
 const (
@@ -29,6 +32,8 @@ const (
 	defaultServerHeartbeatIntervalKey  = "etc.network.ws.server.heartbeatInterval"
 	defaultServerHeartbeatMechanismKey = "etc.network.ws.server.heartbeatMechanism"
 	defaultServerAuthorizeTimeoutKey   = "etc.network.ws.server.authorizeTimeout"
+	defaultServerRealIPEnabledKey      = "etc.network.ws.server.realIP.enabled"
+	defaultServerRealIPModeKey         = "etc.network.ws.server.realIP.mode"
 )
 
 const (
@@ -36,7 +41,13 @@ const (
 	TickHeartbeat HeartbeatMechanism = "tick" // 主动定时心跳
 )
 
+const (
+	RealIPModeLeft  RealIPMode = "left"  // 从左往右解析X-Forwarded-For
+	RealIPModeRight RealIPMode = "right" // 从右往左解析X-Forwarded-For
+)
+
 type HeartbeatMechanism string
+type RealIPMode string
 
 type ServerOption func(o *serverOptions)
 
@@ -53,6 +64,8 @@ type serverOptions struct {
 	heartbeatInterval  time.Duration      // 心跳间隔时间，默认10s
 	heartbeatMechanism HeartbeatMechanism // 心跳机制，默认resp
 	authorizeTimeout   time.Duration      // 授权超时时间，默认0s，不检测
+	realIPEnabled      bool               // 是否开启真实IP提取
+	realIPMode         RealIPMode         // X-Forwarded-For解析模式
 }
 
 func defaultServerOptions() *serverOptions {
@@ -83,6 +96,8 @@ func defaultServerOptions() *serverOptions {
 		heartbeatInterval:  etc.Get(defaultServerHeartbeatIntervalKey, defaultServerHeartbeatInterval).Duration(),
 		heartbeatMechanism: HeartbeatMechanism(etc.Get(defaultServerHeartbeatMechanismKey, defaultServerHeartbeatMechanism).String()),
 		authorizeTimeout:   etc.Get(defaultServerAuthorizeTimeoutKey, defaultServerAuthorizeTimeout).Duration(),
+		realIPEnabled:      etc.Get(defaultServerRealIPEnabledKey, defaultServerRealIPEnabled).Bool(),
+		realIPMode:         parseRealIPMode(etc.Get(defaultServerRealIPModeKey, defaultServerRealIPMode).String()),
 	}
 }
 
@@ -129,4 +144,25 @@ func WithServerHeartbeatMechanism(heartbeatMechanism HeartbeatMechanism) ServerO
 // WithServerAuthorizeTimeout 设置授权超时时间
 func WithServerAuthorizeTimeout(authorizeTimeout time.Duration) ServerOption {
 	return func(o *serverOptions) { o.authorizeTimeout = authorizeTimeout }
+}
+
+// WithServerRealIPEnabled 设置是否开启真实IP提取
+func WithServerRealIPEnabled(enabled bool) ServerOption {
+	return func(o *serverOptions) { o.realIPEnabled = enabled }
+}
+
+// WithServerRealIPMode 设置X-Forwarded-For解析模式
+func WithServerRealIPMode(mode RealIPMode) ServerOption {
+	return func(o *serverOptions) { o.realIPMode = parseRealIPMode(string(mode)) }
+}
+
+func parseRealIPMode(mode string) RealIPMode {
+	switch RealIPMode(strings.ToLower(strings.TrimSpace(mode))) {
+	case RealIPModeLeft:
+		return RealIPModeLeft
+	case RealIPModeRight:
+		return RealIPModeRight
+	default:
+		return RealIPModeRight
+	}
 }

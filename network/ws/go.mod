@@ -1,4 +1,4 @@
-module github.com/dobyte/due/network/ws/v2
+module github.com/rockyn/due/network/ws/v2
 
 go 1.24.0
 

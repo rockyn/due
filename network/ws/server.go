@@ -124,13 +124,18 @@ func (s *server) serve() {
 			return
 		}
 
+		var realIP string
+		if s.opts.realIPEnabled {
+			realIP = resolveRealIP(r, s.opts.realIPMode)
+		}
+
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			log.Errorf("websocket upgrade error: %v", err)
 			return
 		}
 
-		if err = s.connMgr.allocate(conn); err != nil {
+		if err = s.connMgr.allocate(conn, realIP); err != nil {
 			log.Errorf("connection allocate error: %v", err)
 			_ = conn.Close()
 		}

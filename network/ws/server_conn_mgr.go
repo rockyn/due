@@ -57,14 +57,14 @@ func (cm *serverConnMgr) close() {
 }
 
 // 分配连接
-func (cm *serverConnMgr) allocate(c *websocket.Conn) error {
+func (cm *serverConnMgr) allocate(c *websocket.Conn, realIP string) error {
 	if cm.total.Load() >= int64(cm.server.opts.maxConnNum) {
 		return errors.ErrTooManyConnection
 	}
 
 	id := cm.id.Add(1)
 	conn := cm.pool.Get().(*serverConn)
-	conn.init(cm, id, c)
+	conn.init(cm, id, c, realIP)
 	index := int(reflect.ValueOf(c).Pointer()) % len(cm.partitions)
 	cm.partitions[index].store(c, conn)
 	cm.total.Add(1)
